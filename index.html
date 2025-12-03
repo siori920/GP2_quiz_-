@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>名護市クイズサイネージ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 810px;
+            height: 945px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', 'Meiryo', sans-serif;
+        }
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #7accbf;
+        }
+        /* Question text */
+        .question {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 450px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #fcf2e5;
+            line-height: 1.4;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        /* Choice buttons */
+        .choices {
+            position: absolute;
+            top: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 520px;
+        }
+        .choice {
+            display: block;
+            width: 100%;
+            margin: 20px 0;
+            padding: 25px 35px;
+            background: #fcf2e5;
+            border: none;
+            border-radius: 30px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #000;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .choice:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .choice:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        /* Menu button */
+        .menu-button {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 60px;
+            background: #fcf2e5;
+            border: none;
+            border-radius: 25px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .menu-button:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        /* Result screen styles */
+        .result-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .result-card {
+            width: 500px;
+            height: 350px;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .correct-card {
+            background: #fcf2e5;
+        }
+        .incorrect-card {
+            background: #fcf2e5;
+        }
+        .result-header {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #000;
+        }
+        .result-main {
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #000;
+        }
+        .result-footer {
+            font-size: 22px;
+            line-height: 1.4;
+            color: #000;
+        }
+        /* Quiz screen */
+        .quiz-screen {
+            display: block;
+        }
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <!-- Quiz Screen -->
+    <div class="quiz-screen" id="quizScreen">
+        <!-- Quiz content -->
+        <div class="question" id="question"></div>
+        
+        <div class="choices">
+            <button class="choice" id="choiceA" onclick="selectAnswer('A')"></button>
+            <button class="choice" id="choiceB" onclick="selectAnswer('B')"></button>
+            <button class="choice" id="choiceC" onclick="selectAnswer('C')"></button>
+            <button class="choice" id="choiceD" onclick="selectAnswer('D')"></button>
+        </div>
+    </div>
+    <!-- Result Screen -->
+    <div class="result-screen" id="resultScreen">
+        <div class="result-card" id="resultCard">
+            <div class="result-header" id="resultHeader"></div>
+            <div class="result-main" id="resultMain"></div>
+            <div class="result-footer" id="resultFooter"></div>
+        </div>
+    </div>
+    <!-- Menu button -->
+    <button class="menu-button" onclick="returnToQuiz()">メニュー</button>
+    
+    <script>
+        // Quiz data with correct answers and IDs
+        const quizData = [
+            {
+                id: 'quiz1',
+                question: "ネオパークオキナワの敷地面積について、次のうち正しいのはどれでしょう？",
+                choices: ["A. 東京ドーム約1個分", "B. 東京ドーム約5個分", "C. 東京ドーム約8個分", "D. 東京ドーム約10個分"],
+                correct: "B"
+            },
+            {
+                id: 'quiz2',
+                question: "ネオパークオキナワ内を走っている乗り物はなんでしょう？",
+                choices: ["A. 機関車", "B. ゴーカート", "C. 船", "D. 自転車"],
+                correct: "A"
+            },
+            {
+                id: 'quiz3',
+                question: "名護市の公認キャラクターの名前は？",
+                choices: ["A. 名護家族", "B. 名護師範", "C. 名護師匠", "D. 名護親方"],
+                correct: "D"
+            }
+            {
+                id: 'quiz4',
+                question: "名護市民会館の入り口にある像は何の動物の像？",
+                choices: ["A. 猫の像, "B. ヤンバルクイナの像", "C. 黒豚(あぐー豚)の像", "D. ジンベイザメの像"],
+                correct: "C"
+            }
+        ];
+        let currentQuiz = null;
+        let answerStats = null;
+        // Google Apps Script Web App URL (デプロイ後のURLに置き換えてください)
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz_pGJjyh3h80FPuk2X3B-PDLAtev53S15NCe8y2HDsUv5k9sX8eH-y0YIJfZJptcaobg/exec';
+        // Create empty statistics object
+        function createEmptyStats() {
+            return {
+                quiz1: { A: 0, B: 0, C: 0, D: 0 },
+                quiz2: { A: 0, B: 0, C: 0, D: 0 },
+                quiz3: { A: 0, B: 0, C: 0, D: 0 }
+                quiz4: { A: 0, B: 0, C: 0, D: 0 }
+            };
+        }
+        // Initialize statistics from server (バックグラウンドで実行)
+        async function initStats() {
+            try {
+                const response = await fetch(API_URL);
+                if (response.ok) {
+                    answerStats = await response.json();
+                    console.log('✅ サーバーから統計を読み込みました');
+                } else {
+                    answerStats = createEmptyStats();
+                    console.log('✅ 新しい統計を作成しました');
+                }
+            } catch (e) {
+                console.log('⚠️ サーバー接続エラー。ローカルモードで動作します:', e);
+                answerStats = createEmptyStats();
+            }
+        }
+        // Save answer to server (URLパラメータを使用してCORS回避)
+        async function saveAnswer(quizId, choice) {
+            try {
+                const url = `${API_URL}?quizId=${encodeURIComponent(quizId)}&choice=${encodeURIComponent(choice)}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors'
+                });
+                
+                console.log('✅ 回答をサーバーに送信しました');
+            } catch (e) {
+                console.error('❌ サーバー接続エラー:', e);
+            }
+        }
+        // Record answer
+        async function recordAnswer(quizId, selectedChoice) {
+            // Update local stats immediately for UI
+            if (answerStats[quizId] && answerStats[quizId][selectedChoice] !== undefined) {
+                answerStats[quizId][selectedChoice]++;
+            }
+            
+            // Save to server
+            await saveAnswer(quizId, selectedChoice);
+            console.log(`📝 回答を記録: ${quizId} - ${selectedChoice}`);
+        }
+        // Random quiz selection
+        function loadRandomQuiz() {
+            const randomIndex = Math.floor(Math.random() * quizData.length);
+            currentQuiz = quizData[randomIndex];
+            
+            document.getElementById('question').innerText = currentQuiz.question;
+            document.getElementById('choiceA').innerText = currentQuiz.choices[0];
+            document.getElementById('choiceB').innerText = currentQuiz.choices[1];
+            document.getElementById('choiceC').innerText = currentQuiz.choices[2];
+            document.getElementById('choiceD').innerText = currentQuiz.choices[3];
+            
+            // Enable all buttons
+            document.querySelectorAll('.choice').forEach(btn => btn.disabled = false);
+        }
+        // Handle answer selection
+        async function selectAnswer(selectedChoice) {
+            // Disable all buttons to prevent multiple clicks
+            document.querySelectorAll('.choice').forEach(btn => btn.disabled = true);
+            
+            // Record the answer
+            await recordAnswer(currentQuiz.id, selectedChoice);
+            
+            const isCorrect = selectedChoice === currentQuiz.correct;
+            showResult(isCorrect);
+        }
+        // Show result screen
+        function showResult(isCorrect) {
+            const quizScreen = document.getElementById('quizScreen');
+            const resultScreen = document.getElementById('resultScreen');
+            const resultCard = document.getElementById('resultCard');
+            const resultHeader = document.getElementById('resultHeader');
+            const resultMain = document.getElementById('resultMain');
+            const resultFooter = document.getElementById('resultFooter');
+            // Hide quiz screen and show result screen
+            quizScreen.classList.add('hidden');
+            resultScreen.style.display = 'flex';
+            if (isCorrect) {
+                // Correct answer
+                resultCard.className = 'result-card correct-card';
+                resultHeader.textContent = 'お見事！';
+                resultMain.textContent = '正解！';
+                resultFooter.textContent = 'もっと名護を知りたい方は\nこちら';
+            } else {
+                // Incorrect answer
+                resultCard.className = 'result-card incorrect-card';
+                resultHeader.textContent = '残念...';
+                resultMain.textContent = '不正解！';
+                resultFooter.textContent = '正解を知りたい方はこちら';
+            }
+        }
+        // Return to quiz screen
+        function returnToQuiz() {
+            const quizScreen = document.getElementById('quizScreen');
+            const resultScreen = document.getElementById('resultScreen');
+            // Hide result screen and show quiz screen
+            resultScreen.style.display = 'none';
+            quizScreen.classList.remove('hidden');
+            // Load a new random quiz
+            loadRandomQuiz();
+        }
+        // Show statistics
+        async function showStats() {
+            try {
+                // Reload latest stats from server
+                const response = await fetch(API_URL);
+                if (response.ok) {
+                    answerStats = await response.json();
+                }
+                
+                console.clear();
+                console.log('='.repeat(60));
+                console.log('📊 クイズ回答統計（全ブラウザ・全デバイス共有）');
+                console.log('='.repeat(60));
+                
+                quizData.forEach((quiz, index) => {
+                    const stats = answerStats[quiz.id];
+                    const total = stats.A + stats.B + stats.C + stats.D;
+                    
+                    console.log(`\n【問題${index + 1}】${quiz.question}`);
+                    console.log(`正解: ${quiz.correct}`);
+                    console.log('-'.repeat(50));
+                    console.log(`A: ${stats.A}人 (${total > 0 ? Math.round(stats.A / total * 100) : 0}%)`);
+                    console.log(`B: ${stats.B}人 (${total > 0 ? Math.round(stats.B / total * 100) : 0}%)`);
+                    console.log(`C: ${stats.C}人 (${total > 0 ? Math.round(stats.C / total * 100) : 0}%)`);
+                    console.log(`D: ${stats.D}人 (${total > 0 ? Math.round(stats.D / total * 100) : 0}%)`);
+                    console.log(`合計: ${total}人`);
+                });
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('💡 統計をリセットするには、Googleスプレッドシートのデータを削除してください');
+                console.log('='.repeat(60));
+            } catch (e) {
+                console.error('❌ 統計の取得に失敗しました:', e);
+            }
+        }
+        // Make functions available globally for console access
+        window.showStats = showStats;
+        // Load quiz on page load
+        window.addEventListener('load', () => {
+            // 統計の初期化をバックグラウンドで実行（待たない）
+            answerStats = createEmptyStats();
+            initStats();
+            
+            // クイズをすぐに表示
+            loadRandomQuiz();
+            
+            console.log('📝 クイズサイトが読み込まれました');
+            console.log('💡 統計を見るには、コンソールで showStats() を実行してください');
+            console.log('🌐 統計は全ブラウザ・全デバイスで共有されます');
+        });
+    </script>
+</body>
+</html>
