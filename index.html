@@ -28,7 +28,7 @@
             top: 75px;
             left: 50%;
             transform: translateX(-50%);
-            width: 450px;
+            width: 470px;
             text-align: center;
             font-size: 32px;
             font-weight: bold;
@@ -68,22 +68,49 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+        /* 施設コンテンツへボタン（クイズ画面でのみ表示） */
+        .facility-button {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 450px;
+            height: 80px;
+            background-color: #e8e8e8;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            transition: transform 0.2s;
+            border: none;
+        }
+        
+        .facility-button:hover {
+            transform: translateX(-50%) scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        
         /* Menu button */
         .menu-button {
             position: absolute;
-            bottom: 100px;
+            bottom: 240px;
             left: 50%;
             transform: translateX(-50%);
-            width: 180px;
-            height: 60px;
+            width: 450px;
+            height: 80px;
             background: #fcf2e5;
             border: none;
-            border-radius: 25px;
-            font-size: 24px;
+            border-radius: 20px;
+            font-size: 28px;
             font-weight: bold;
-            color: #000;
+            color: #333;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -96,19 +123,19 @@
         /* Explanation button */
         .explanation-button {
             position: absolute;
-            bottom: 180px;
+            bottom: 140px;
             left: 50%;
             transform: translateX(-50%);
-            width: 180px;
-            height: 60px;
+            width: 450px;
+            height: 80px;
             background: #fcf2e5;
             border: none;
-            border-radius: 25px;
-            font-size: 24px;
+            border-radius: 20px;
+            font-size: 28px;
             font-weight: bold;
-            color: #000;
+            color: #333;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
             display: none;
             align-items: center;
             justify-content: center;
@@ -230,10 +257,13 @@
             <div class="explanation-text" id="explanationText"></div>
         </div>
     </div>
+    <!-- 施設コンテンツへボタン（クイズ画面でのみ表示） -->
+    <button class="facility-button" id="facilityButton" onclick="goToFacility()">施設コンテンツへ</button>
+    
     <!-- Explanation button -->
     <button class="explanation-button" id="explanationButton" onclick="showExplanation()">解説</button>
     <!-- Menu button -->
-    <button class="menu-button" onclick="returnToQuiz()">メニュー</button>
+    <button class="menu-button" onclick="returnToQuiz()">再チャレンジ</button>
     
     <script>
         // Quiz data with correct answers and IDs
@@ -269,6 +299,7 @@
         ];
         let currentQuiz = null;
         let answerStats = null;
+        let explanationTimer = null;
         // Google Apps Script Web App URL (デプロイ後のURLに置き換えてください)
         const API_URL = 'https://script.google.com/macros/s/AKfycbz_pGJjyh3h80FPuk2X3B-PDLAtev53S15NCe8y2HDsUv5k9sX8eH-y0YIJfZJptcaobg/exec';
         // Create empty statistics object
@@ -355,10 +386,12 @@
             const resultMain = document.getElementById('resultMain');
             const resultFooter = document.getElementById('resultFooter');
             const explanationButton = document.getElementById('explanationButton');
+            const facilityButton = document.getElementById('facilityButton');
             // Hide quiz screen and show result screen
             quizScreen.classList.add('hidden');
             resultScreen.style.display = 'flex';
             explanationButton.style.display = 'flex';
+            facilityButton.style.display = 'none';  // 結果画面では施設ボタンを非表示
             if (isCorrect) {
                 // Correct answer
                 resultCard.className = 'result-card correct-card';
@@ -373,16 +406,30 @@
                 resultFooter.textContent = '正解を知りたい方はこちら';
             }
         }
+        // 施設コンテンツへボタンのクリック処理
+        function goToFacility() {
+            // 必要に応じて遷移先のURLを設定
+            // window.location.href = 'facility.html'; // 実際のページに遷移する場合
+        }
+        
         // Return to quiz screen
         function returnToQuiz() {
+            // タイマーをクリア
+            if (explanationTimer) {
+                clearTimeout(explanationTimer);
+                explanationTimer = null;
+            }
+            
             const quizScreen = document.getElementById('quizScreen');
             const resultScreen = document.getElementById('resultScreen');
             const explanationScreen = document.getElementById('explanationScreen');
             const explanationButton = document.getElementById('explanationButton');
+            const facilityButton = document.getElementById('facilityButton');
             // Hide result screen and explanation screen, show quiz screen
             resultScreen.style.display = 'none';
             explanationScreen.style.display = 'none';
             explanationButton.style.display = 'none';
+            facilityButton.style.display = 'flex';  // クイズ画面では施設ボタンを表示
             quizScreen.classList.remove('hidden');
             // Load a new random quiz
             loadRandomQuiz();
@@ -399,6 +446,16 @@
             resultScreen.style.display = 'none';
             explanationButton.style.display = 'none';
             explanationScreen.style.display = 'flex';
+            
+            // 既存のタイマーがあればクリア
+            if (explanationTimer) {
+                clearTimeout(explanationTimer);
+            }
+            
+            // 20秒後に自動的にクイズ画面に戻る
+            explanationTimer = setTimeout(() => {
+                returnToQuiz();
+            }, 20000);
         }
         // Show statistics
         async function showStats() {
@@ -445,6 +502,9 @@
             
             // クイズをすぐに表示
             loadRandomQuiz();
+            
+            // 初期表示では施設ボタンを表示
+            document.getElementById('facilityButton').style.display = 'flex';
             
             console.log('📝 クイズサイトが読み込まれました');
             console.log('💡 統計を見るには、コンソールで showStats() を実行してください');
