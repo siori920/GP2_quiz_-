@@ -95,7 +95,33 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
         
-        /* Menu button */
+        /* Explanation button - 再チャレンジボタンの上に配置 */
+        .explanation-button {
+            position: absolute;
+            bottom: 260px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 450px;
+            height: 80px;
+            background: #fcf2e5;
+            border: none;
+            border-radius: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .explanation-button:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        /* Menu button - 元の位置 */
         .menu-button {
             position: absolute;
             bottom: 170px;
@@ -120,32 +146,8 @@
             transform: translateX(-50%) translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.3);
         }
-        /* Explanation button */
-        .explanation-button {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 450px;
-            height: 80px;
-            background: #fcf2e5;
-            border: none;
-            border-radius: 20px;
-            font-size: 28px;
-            font-weight: bold;
-            color: #333;
-            cursor: pointer;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-        .explanation-button:hover {
-            transform: translateX(-50%) translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
-        /* Result screen styles */
+        
+        /* Result screen styles - カードをさらに上に移動 */
         .result-screen {
             position: absolute;
             top: 0;
@@ -155,7 +157,7 @@
             display: none;
             justify-content: center;
             align-items: center;
-            padding-bottom: 150px;
+            padding-bottom: 340px;
         }
         .result-card {
             width: 500px;
@@ -301,8 +303,25 @@
         let currentQuiz = null;
         let answerStats = null;
         let explanationTimer = null;
+        let inactivityTimer = null;
+        
         // Google Apps Script Web App URL (デプロイ後のURLに置き換えてください)
         const API_URL = 'https://script.google.com/macros/s/AKfycbyPmsfp6ts6l10FfIUurJaVkskcrWP89B04c8r1JHwFgm8lvjAqlQ5koQgZNXUuJ2OXDA/exec';
+        
+        // 30秒無操作タイマーのリセット
+        function resetInactivityTimer() {
+            // 既存のタイマーをクリア
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+            }
+            
+            // 新しいタイマーを設定（30秒）
+            inactivityTimer = setTimeout(() => {
+                console.log('⏰ 30秒間操作がなかったため、トップページに戻ります');
+                returnToQuiz();
+            }, 30000);
+        }
+        
         // Create empty statistics object
         function createEmptyStats() {
             return {
@@ -312,6 +331,7 @@
                 quiz4: { A: 0, B: 0, C: 0, D: 0 }
             };
         }
+        
         // Initialize statistics from server (バックグラウンドで実行)
         async function initStats() {
             try {
@@ -328,6 +348,7 @@
                 answerStats = createEmptyStats();
             }
         }
+        
         // Save answer to server (URLパラメータを使用してCORS回避)
         async function saveAnswer(quizId, choice) {
             try {
@@ -342,6 +363,7 @@
                 console.error('❌ サーバー接続エラー:', e);
             }
         }
+        
         // Record answer
         async function recordAnswer(quizId, selectedChoice) {
             // Update local stats immediately for UI
@@ -353,6 +375,7 @@
             await saveAnswer(quizId, selectedChoice);
             console.log(`📝 回答を記録: ${quizId} - ${selectedChoice}`);
         }
+        
         // Random quiz selection
         function loadRandomQuiz() {
             const randomIndex = Math.floor(Math.random() * quizData.length);
@@ -366,9 +389,16 @@
             
             // Enable all buttons
             document.querySelectorAll('.choice').forEach(btn => btn.disabled = false);
+            
+            // タイマーをリセット
+            resetInactivityTimer();
         }
+        
         // Handle answer selection
         async function selectAnswer(selectedChoice) {
+            // タイマーをリセット
+            resetInactivityTimer();
+            
             // Disable all buttons to prevent multiple clicks
             document.querySelectorAll('.choice').forEach(btn => btn.disabled = true);
             
@@ -378,6 +408,7 @@
             const isCorrect = selectedChoice === currentQuiz.correct;
             showResult(isCorrect);
         }
+        
         // Show result screen
         function showResult(isCorrect) {
             const quizScreen = document.getElementById('quizScreen');
@@ -388,11 +419,13 @@
             const resultFooter = document.getElementById('resultFooter');
             const explanationButton = document.getElementById('explanationButton');
             const facilityButton = document.getElementById('facilityButton');
+            
             // Hide quiz screen and show result screen
             quizScreen.classList.add('hidden');
             resultScreen.style.display = 'flex';
             explanationButton.style.display = 'flex';
-            facilityButton.style.display = 'none';  // 結果画面では施設ボタンを非表示
+            facilityButton.style.display = 'none';
+            
             if (isCorrect) {
                 // Correct answer
                 resultCard.className = 'result-card correct-card';
@@ -406,16 +439,23 @@
                 resultMain.textContent = '不正解！';
                 resultFooter.textContent = '正解を知りたい方はこちら';
             }
+            
+            // タイマーをリセット
+            resetInactivityTimer();
         }
+        
         // 施設コンテンツへボタンのクリック処理
         function goToFacility() {
+            // タイマーをリセット
+            resetInactivityTimer();
+            
             // 必要に応じて遷移先のURLを設定
             // window.location.href = 'facility.html'; // 実際のページに遷移する場合
         }
         
         // Return to quiz screen
         function returnToQuiz() {
-            // タイマーをクリア
+            // 解説タイマーをクリア
             if (explanationTimer) {
                 clearTimeout(explanationTimer);
                 explanationTimer = null;
@@ -426,29 +466,37 @@
             const explanationScreen = document.getElementById('explanationScreen');
             const explanationButton = document.getElementById('explanationButton');
             const facilityButton = document.getElementById('facilityButton');
+            
             // Hide result screen and explanation screen, show quiz screen
             resultScreen.style.display = 'none';
             explanationScreen.style.display = 'none';
             explanationButton.style.display = 'none';
-            facilityButton.style.display = 'flex';  // クイズ画面では施設ボタンを表示
+            facilityButton.style.display = 'flex';
             quizScreen.classList.remove('hidden');
+            
             // Load a new random quiz
             loadRandomQuiz();
         }
+        
         // Show explanation screen
         function showExplanation() {
+            // タイマーをリセット
+            resetInactivityTimer();
+            
             const resultScreen = document.getElementById('resultScreen');
             const explanationScreen = document.getElementById('explanationScreen');
             const explanationText = document.getElementById('explanationText');
             const explanationButton = document.getElementById('explanationButton');
+            
             // Set explanation text with HTML for bold formatting
             explanationText.innerHTML = currentQuiz.explanation;
+            
             // Hide result screen, explanation button and show explanation screen
             resultScreen.style.display = 'none';
             explanationButton.style.display = 'none';
             explanationScreen.style.display = 'flex';
             
-            // 既存のタイマーがあればクリア
+            // 既存の解説タイマーがあればクリア
             if (explanationTimer) {
                 clearTimeout(explanationTimer);
             }
@@ -458,6 +506,7 @@
                 returnToQuiz();
             }, 20000);
         }
+        
         // Show statistics
         async function showStats() {
             try {
@@ -493,8 +542,10 @@
                 console.error('❌ 統計の取得に失敗しました:', e);
             }
         }
+        
         // Make functions available globally for console access
         window.showStats = showStats;
+        
         // Load quiz on page load
         window.addEventListener('load', () => {
             // 統計の初期化をバックグラウンドで実行（待たない）
@@ -510,7 +561,12 @@
             console.log('📝 クイズサイトが読み込まれました');
             console.log('💡 統計を見るには、コンソールで showStats() を実行してください');
             console.log('🌐 統計は全ブラウザ・全デバイスで共有されます');
+            console.log('⏰ 30秒間操作がない場合、自動的にトップページに戻ります');
         });
+        
+        // すべてのユーザー操作でタイマーをリセット
+        document.addEventListener('click', resetInactivityTimer);
+        document.addEventListener('touchstart', resetInactivityTimer);
     </script>
 </body>
 </html>
